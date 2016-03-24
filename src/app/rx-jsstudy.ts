@@ -1,21 +1,33 @@
 import {Component} from 'angular2/core';
-import {RouteConfig, ROUTER_DIRECTIVES, ROUTER_PROVIDERS} from 'angular2/router';
-
+import {Control} from 'angular2/common';
+import {WikipediaService} from './wikipedia-service/wikipedia-service'
+import {Observable} from 'rxjs/Observable';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/debounceTime';
+import 'rxjs/add/operator/distinctUntilChanged';
+import 'rxjs/add/operator/switchMap';
 
 @Component({
   selector: 'rx-jsstudy-app',
-  providers: [ROUTER_PROVIDERS],
-  templateUrl: 'app/rx-jsstudy.html',
-  directives: [ROUTER_DIRECTIVES],
-  pipes: []
+  template: `
+    <div>
+      <h2>Wikipedia Search</h2>
+      <input type="text" [ngFormControl]="term">
+      <ul>
+        <li *ngFor="#item of items | async">{{item}}</li>
+      </ul>
+    </div>
+  `,
+  pipes: [],
+  providers: [WikipediaService]
 })
-@RouteConfig([
-
-])
 export class RxJSStudyApp {
-  defaultMeaning: number = 42;
-
-  meaningOfLife(meaning?: number) {
-    return `The meaning of life is ${meaning || this.defaultMeaning}`;
+  items: Observable<Array<string>>;
+  term = new Control();
+  constructor(private wikipediaService: WikipediaService) {
+    this.items = this.term.valueChanges
+      .debounceTime(400)
+      .distinctUntilChanged()
+      .switchMap(term => this.wikipediaService.search(term));
   }
 }
